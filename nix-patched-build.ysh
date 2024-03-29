@@ -1,0 +1,41 @@
+#!/usr/bin/env ysh
+
+# Check everything is available. idk why
+type nix-prefetch-url >/dev/null
+type nix-build >/dev/null
+type awk >/dev/null
+type sed >/dev/null
+type git >/dev/null
+
+# TODO: check is dir ysh?
+#if ! [[ -d "./nixpkgs" ]]; then
+#  # TODO
+#  git clone --depth 1 https://github.com/NixOS/nixpkgs a481a7c16caae63e6b1dc2e20bebac20392c86c1
+#fi
+
+if (len(ARGV) > 0) {
+  echo Creating a stdenv with $[ARGV[0]]
+  var oils_hash = $(nix-prefetch-url $1)
+  mv pkgs/stdenv/linux/make-bootstrap-tools.nix{,.bak}
+  awk "\$1 == \"oilsMinimal\" { found = True }
+  \$1 == \"sha256\" { if (found == True) { print \"      sha256 = \\\"${oils_hash}\\\";\"; found = false; next; } }
+  { print \$0 };" make-bootstrap-tools.nix >> nixpkgs/pkgs/stdenv/linux/make-bootstrap-tools.nix
+} else {
+  echo "Not patching new oils version. Just retrying to build"
+}
+
+# use bash to initially build our shell
+cd nixpkgs {
+  git checkout pkgs/stdenv/linux/bootstrap-files/x86_64-unknown-linux-gnu.nix
+  
+  var bootstrap_file = $(nix-build pkgs/stdenv/linux/make-bootstrap-tools.nix --pure -A build)
+  var prefetched_hash = $(nix-prefetch-url file://${bootstrap_file}/on-server/bootstrap-tools.tar.xz)
+
+  # This is a really ugly hack. nix thinks it uses the "normal" stdenv but it only looks at the hash which is the one with our oils build
+  # Since the hash is already available it doesn't rebuild it and takes what's there
+  # Replace only first occurence
+  sed -ie "1,/hash = .*/s/hash = .*/sha256 = \"${prefetched_hash}\";/" pkgs/stdenv/linux/bootstrap-files/x86_64-unknown-linux-gnu.nix
+  
+  # TODO allow the build option from the command line
+  nix-build . -A bash
+}
