@@ -1,0 +1,22 @@
+#!/usr/bin/env ysh
+
+if (len(ARGV) <1 ) {
+  echo "Need a path!"
+  exit 1
+}
+var src = ARGV[0]
+var dest = "./patch/" ++ (src => split("/")[-1])
+
+if ! [[ -d $src ]]; then
+  echo "Path needs to be a directory!"
+fi
+
+if [[ -d $dest ]]; then
+  echo "Destination $dest already exists."
+else
+  echo "Destination $dest doesn't exist. Copying"
+  mkdir -p ./patch
+  rsync --chown "$USER:" --mkpath -aAX $src $dest
+  chmod -R u+w $dest
+fi
+sudo mount -v --bind $dest $src
