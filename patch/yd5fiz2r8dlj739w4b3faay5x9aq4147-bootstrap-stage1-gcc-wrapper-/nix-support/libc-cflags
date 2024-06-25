@@ -1,0 +1,1 @@
+-idirafter /nix/store/566qdcx3r7mgb5qs1402vs17ywgvq9mm-bootstrap-stage0-glibc-bootstrapFiles/include -idirafter /nix/store/h5cil3ijwlbwlqx08hfy63x5rlcr456n-bootstrap-tools/lib/gcc/x86_64-unknown-linux-gnu/13.2.0/include-fixed 
