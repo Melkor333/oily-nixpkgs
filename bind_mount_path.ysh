@@ -1,22 +1,31 @@
 #!/usr/bin/env ysh
 
-if (len(ARGV) <1 ) {
-  echo "Need a path!"
-  exit 1
+
+proc bind-mount(src) {
+  var dest = "./patch/" ++ (src => split("/")[-1])
+
+  echo $src
+  echo $dest
+  if test -d $src {
+   echo "Path needs to be a directory!"
+  }
+
+  if test -d $dest {
+    echo "Destination $dest already exists."
+  } else {
+    echo "Destination $dest doesn't exist. Copying"
+    mkdir -p ./patch
+    rsync --chown "$USER:" --mkpath -aAX $src ./patch/
+    chmod -R u+w $dest
+  }
+  sudo mount -v --bind $dest $src
 }
-var src = ARGV[0]
-var dest = "./patch/" ++ (src => split("/")[-1])
 
-if ! [[ -d $src ]]; then
-  echo "Path needs to be a directory!"
-fi
-
-if [[ -d $dest ]]; then
-  echo "Destination $dest already exists."
-else
-  echo "Destination $dest doesn't exist. Copying"
-  mkdir -p ./patch
-  rsync --chown "$USER:" --mkpath -aAX $src $dest
-  chmod -R u+w $dest
-fi
-sudo mount -v --bind $dest $src
+if (len(ARGV) <1 ) {
+  echo "bind-mounting all paths in ./patch"
+  for file in $(cd ./patch { echo * }) {
+    bind-mount /nix/store/$file
+  }
+} else {
+  bind-mount $[ARGV[0]]
+}
