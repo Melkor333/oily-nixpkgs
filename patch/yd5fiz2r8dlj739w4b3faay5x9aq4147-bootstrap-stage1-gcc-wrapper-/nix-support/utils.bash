@@ -46,11 +46,10 @@ mangleVarBool() {
     for suffix in "${role_suffixes[@]}"; do
         local inputVar="${var}${suffix}"
         if [ -v "$inputVar" ]; then
-            # "1" in the end makes `let` return success error code when
+            # return success error code when
             # expression itself evaluates to zero.
-            # We don't use `|| true` because that would silence actual
-            # syntax errors from bad variable values.
-            let "${outputVar} |= ${!inputVar:-0}" "1"
+            # The eval allows to capture syntax error from bad variables
+            eval ": \$(( ${outputVar} |= ${!inputVar:-0} ))"
         fi
     done
 }
